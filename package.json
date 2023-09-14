@@ -6,9 +6,6 @@
   "scripts": {
     "start": "node index.js folder1 folder2"
   },
-  "dependencies": {
-    "fse": "^4.0.1"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ghzcool/sync-folders.git"
