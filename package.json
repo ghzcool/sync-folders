@@ -1,5 +1,5 @@
 {
-  "name": "@ghzcool/sync-folders",
+  "name": "sync-two-folders",
   "version": "1.0.0",
   "description": "continiously sync data in two folders",
   "main": "index.js",
@@ -7,7 +7,7 @@
     "start": "node index.js folder1 folder2"
   },
   "bin": {
-    "@ghzcool/sync-folders": "index.js"
+    "sync-two-folders": "index.js"
   },
   "repository": {
     "type": "git",
