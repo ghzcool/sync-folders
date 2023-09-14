@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node index.js folder1 folder2"
   },
+  "bin": {
+    "sync-folders": "./index.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ghzcool/sync-folders.git"
