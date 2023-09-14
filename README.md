@@ -1,13 +1,6 @@
 # sync-folders
 continiously sync data in two folders
 
-# Setup
-
-run in terminal
-```
-npm ci
-```
-
 # Usage
 
 run in terminal
