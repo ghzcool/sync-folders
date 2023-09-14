@@ -1,8 +1,7 @@
 {
   "name": "sync-two-folders",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "description": "continiously sync data in two folders",
-  "main": "index.js",
   "scripts": {
     "start": "node index.js folder1 folder2"
   },

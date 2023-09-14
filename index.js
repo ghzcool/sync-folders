@@ -1,5 +1,7 @@
-const util = require('util');
-const fs = require('fs');
+#!/usr/bin/env node
+
+const util = require("util");
+const fs = require("fs");
 
 const PATH_1 = process.argv[process.argv.length - 2];
 const PATH_2 = process.argv[process.argv.length - 1];
@@ -7,12 +9,10 @@ const PATH_2 = process.argv[process.argv.length - 1];
 const STAT_MODE_FOLDER = 16822;
 const STAT_MODE_FILE = 33206;
 const ERROR_CODE_ENOENT = "ENOENT";
-const ERROR_CODE_EPERM = "EPERM";
 
 console.log("sync-folders", PATH_1, PATH_2);
 
 const stat = util.promisify(fs.stat);
-const unlink = util.promisify(fs.unlink);
 const copyFile = util.promisify(fs.copyFile);
 const rm = util.promisify(fs.rm);
 const cp = util.promisify(fs.cp);
@@ -70,16 +70,6 @@ const processFile = async (srcParentPath, destParentPath, filePath, srcParentSta
     }
   }
 
-  /* console.log("processFile", {
-    srcParentPath,
-    destParentPath,
-    filePath,
-    isDestMissing,
-    isSrcNewer,
-    isSrcParentNewer,
-    isSrcParentOlder
-  }); */
-
   if ((isDestMissing && isSrcParentNewer) || isSrcNewer) {
     copyFileContent(srcParentPath + filePath, destParentPath + filePath);
   } else if (isDestMissing && isSrcParentOlder) {
@@ -109,17 +99,6 @@ const processFolder = async (srcParentPath, destParentPath, folderPath, srcParen
   } else if (isDestMissing && isSrcParentOlder) {
     deleteTarget(srcParentPath + folderPath);
   } else if (isSrcNewer) {
-
-    /* console.log("processFolder", {
-      srcParentPath,
-      destParentPath,
-      folderPath,
-      isSrcNewer,
-      isDestMissing,
-      isSrcParentNewer,
-      isSrcParentOlder
-    }); */
-
     try {
       const dir = fs.readdirSync(srcParentPath + folderPath);
       dir.forEach(item => {
@@ -131,23 +110,13 @@ const processFolder = async (srcParentPath, destParentPath, folderPath, srcParen
   }
 };
 
-startWatcher(PATH_1, PATH_2);
-startWatcher(PATH_2, PATH_1);
-
 const deleteTarget = async (targetPath) => {
   try {
-    await unlink(targetPath);
+    await rm(targetPath, { recursive: true, force: true });
     console.log("DELETED", "\"" + targetPath + "\"");
   } catch (error) {
-    if (error.code === ERROR_CODE_EPERM) {
-      try {
-        await rm(targetPath, { recursive: true, force: true });
-        console.log("DELETED", "\"" + targetPath + "\"");
-      } catch (error) {
-        console.log("rm error", error);
-        // TODO: should not happen
-      }
-    }
+    console.log("rm error", error);
+    // TODO: should not happen
   }
 };
 
@@ -171,23 +140,5 @@ const copyFolderContent = async (srcPath, destPath) => {
   }
 };
 
-/*
-dev: 749821594,
-  mode: 33206,
-  nlink: 1,
-  uid: 0,
-  gid: 0,
-  rdev: 0,
-  blksize: 4096,
-  ino: 15481123720459826,
-  size: 0,
-  blocks: 0,
-  atimeMs: 1694714144963.8406,
-  mtimeMs: 1694714144963.8406,
-  ctimeMs: 1694714395482.428,
-  birthtimeMs: 1694714144963.8406,
-  atime: 2023-09-14T17:55:44.964Z,
-  mtime: 2023-09-14T17:55:44.964Z,
-  ctime: 2023-09-14T17:59:55.482Z,
-  birthtime: 2023-09-14T17:55:44.964Z
-*/
+startWatcher(PATH_1, PATH_2);
+startWatcher(PATH_2, PATH_1);
