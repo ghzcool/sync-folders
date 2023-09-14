@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const util = require("util");
-const fs = require("fs");
+const util = require('util');
+const fs = require('fs');
 
 const PATH_1 = process.argv[process.argv.length - 2];
 const PATH_2 = process.argv[process.argv.length - 1];
@@ -9,10 +9,12 @@ const PATH_2 = process.argv[process.argv.length - 1];
 const STAT_MODE_FOLDER = 16822;
 const STAT_MODE_FILE = 33206;
 const ERROR_CODE_ENOENT = "ENOENT";
+const ERROR_CODE_EPERM = "EPERM";
 
 console.log("sync-folders", PATH_1, PATH_2);
 
 const stat = util.promisify(fs.stat);
+const unlink = util.promisify(fs.unlink);
 const copyFile = util.promisify(fs.copyFile);
 const rm = util.promisify(fs.rm);
 const cp = util.promisify(fs.cp);
@@ -31,7 +33,9 @@ const processContent = async (srcPath, destPath, name) => {
         console.log("unknown", { srcStat });
       }
     } catch (error) {
-      deleteTarget(destPath + "/" + name);
+      if(srcParentStat.ctime > destParentStat.ctime) {
+        deleteTarget(destPath + "/" + name);
+      }
     }
   } catch (error) {
     console.log("watch parent error", error);
@@ -40,7 +44,7 @@ const processContent = async (srcPath, destPath, name) => {
 };
 
 const startWatcher = async (srcPath, destPath) => {
-  fs.watch(srcPath, { recursive: true }, async (event, name) => {
+  fs.watch(srcPath, { recursive: true }, async (event, name) => { // TODO: fix. parent level is not getting new ctime when deeper level is updated
     processContent(srcPath, destPath, name);
   });
 
@@ -69,6 +73,16 @@ const processFile = async (srcParentPath, destParentPath, filePath, srcParentSta
       isDestMissing = true;
     }
   }
+
+  /* console.log("processFile", {
+    srcParentPath,
+    destParentPath,
+    filePath,
+    isDestMissing,
+    isSrcNewer,
+    isSrcParentNewer,
+    isSrcParentOlder
+  }); */
 
   if ((isDestMissing && isSrcParentNewer) || isSrcNewer) {
     copyFileContent(srcParentPath + filePath, destParentPath + filePath);
@@ -99,6 +113,17 @@ const processFolder = async (srcParentPath, destParentPath, folderPath, srcParen
   } else if (isDestMissing && isSrcParentOlder) {
     deleteTarget(srcParentPath + folderPath);
   } else if (isSrcNewer) {
+
+    /* console.log("processFolder", {
+      srcParentPath,
+      destParentPath,
+      folderPath,
+      isSrcNewer,
+      isDestMissing,
+      isSrcParentNewer,
+      isSrcParentOlder
+    }); */
+
     try {
       const dir = fs.readdirSync(srcParentPath + folderPath);
       dir.forEach(item => {
@@ -110,13 +135,23 @@ const processFolder = async (srcParentPath, destParentPath, folderPath, srcParen
   }
 };
 
+startWatcher(PATH_1, PATH_2);
+startWatcher(PATH_2, PATH_1);
+
 const deleteTarget = async (targetPath) => {
   try {
-    await rm(targetPath, { recursive: true, force: true });
+    await unlink(targetPath);
     console.log("DELETED", "\"" + targetPath + "\"");
   } catch (error) {
-    console.log("rm error", error);
-    // TODO: should not happen
+    if (error.code === ERROR_CODE_EPERM) {
+      try {
+        await rm(targetPath, { recursive: true, force: true });
+        console.log("DELETED", "\"" + targetPath + "\"");
+      } catch (error) {
+        console.log("rm error", error);
+        // TODO: should not happen
+      }
+    }
   }
 };
 
@@ -139,6 +174,3 @@ const copyFolderContent = async (srcPath, destPath) => {
     // TODO: should not happen
   }
 };
-
-startWatcher(PATH_1, PATH_2);
-startWatcher(PATH_2, PATH_1);
