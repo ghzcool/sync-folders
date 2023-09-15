@@ -33,19 +33,24 @@ const processContent = async (srcPath, destPath, name) => {
         console.log("unknown", { srcStat });
       }
     } catch (error) {
-      if(srcParentStat.ctime > destParentStat.ctime) {
+      if (srcParentStat.ctime > destParentStat.ctime) {
         deleteTarget(destPath + "/" + name);
       }
     }
   } catch (error) {
-    console.log("watch parent error", error);
-    // TODO: do nothing. one of parent folders is deleted
+    console.log("parents stat error", error);
+    // should not happen
   }
 };
 
 const startWatcher = async (srcPath, destPath) => {
-  fs.watch(srcPath, { recursive: true }, async (event, name) => { // TODO: fix. parent level is not getting new ctime when deeper level is updated
-    processContent(srcPath, destPath, name);
+  fs.watch(srcPath, { recursive: true }, async (event, name) => {
+    const slash = name.includes("/") ? "/" : "\\";
+    const parts = name.split(slash);
+    const objectName = parts[parts.length - 1];
+    parts.splice(parts.length - 1);
+    const path = (parts.length ? "/" + parts.join("/") : "");
+    processContent(srcPath + path, destPath + path, objectName);
   });
 
   try {
@@ -55,6 +60,7 @@ const startWatcher = async (srcPath, destPath) => {
     });
   } catch (error) {
     console.log("sync error", error);
+    // should not happen
   }
 };
 
@@ -75,14 +81,14 @@ const processFile = async (srcParentPath, destParentPath, filePath, srcParentSta
   }
 
   /* console.log("processFile", {
-    srcParentPath,
-    destParentPath,
-    filePath,
-    isDestMissing,
-    isSrcNewer,
-    isSrcParentNewer,
-    isSrcParentOlder
-  }); */
+   srcParentPath,
+   destParentPath,
+   filePath,
+   isDestMissing,
+   isSrcNewer,
+   isSrcParentNewer,
+   isSrcParentOlder
+ }); */
 
   if ((isDestMissing && isSrcParentNewer) || isSrcNewer) {
     copyFileContent(srcParentPath + filePath, destParentPath + filePath);
@@ -131,6 +137,7 @@ const processFolder = async (srcParentPath, destParentPath, folderPath, srcParen
       });
     } catch (error) {
       console.log("processFolder error", error);
+      // should not happen
     }
   }
 };
@@ -149,7 +156,7 @@ const deleteTarget = async (targetPath) => {
         console.log("DELETED", "\"" + targetPath + "\"");
       } catch (error) {
         console.log("rm error", error);
-        // TODO: should not happen
+        //  should not happen
       }
     }
   }
@@ -161,7 +168,7 @@ const copyFileContent = async (srcPath, destPath) => {
     console.log("COPIED", "\"" + srcPath + "\"", "to", "\"" + destPath + "\"");
   } catch (error) {
     console.log("copyContent error", error);
-    // TODO: should not happen
+    // should not happen
   }
 };
 
@@ -171,6 +178,6 @@ const copyFolderContent = async (srcPath, destPath) => {
     console.log("COPIED", "\"" + srcPath + "\"", "to", "\"" + destPath + "\"");
   } catch (error) {
     console.log("copyFolderContent error", error);
-    // TODO: should not happen
+    // should not happen
   }
 };
